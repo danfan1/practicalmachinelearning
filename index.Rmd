@@ -34,6 +34,8 @@ There is a lot of missing values (NA's) in the data set.
 We only data fields with no missing values in all rows.
 We remove fields, like timestamps, that have no connection to how well the exercise is performed.
 
+I then retain 30% of the training set as validation, and only use the remaining 70% for model training.
+
 ```{r clean-data}
 library(readr)
 training <- read_csv("~/Desktop/pml-training.csv")
@@ -47,6 +49,11 @@ training <- subset(training, select=-c(X1, user_name, raw_timestamp_part_1, raw_
 testing <- subset(testing, select=-c(X1, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, num_window))
 
 training$classe <- as.factor(training$classe)
+
+library(caret)
+inTrain <- createDataPartition(training$classe, p = 0.7, list=FALSE)
+validation <- training[-inTrain,]
+training <- training[inTrain,]
 ```
 
 ## Model 1: Decision Tree
@@ -54,16 +61,24 @@ training$classe <- as.factor(training$classe)
 I first try to build a model with decision tree.
 
 ```{r rpart}
-library(caret)
 modelrpart <- train(classe ~ ., method="rpart", data=training)
 predrpart <- predict(modelrpart,newdata=training)
 sum(predrpart==training$classe) / length(predrpart)
 table(predrpart, training$classe)
 ```
 
-The accuracy is only 0.5.
+The accuracy on the training set is only 0.5.
 The confusion matrix also shows the model does separate the classes well.
 What is worst is that it does not predict any case to class D.
+
+I then apply the model on the validation set.
+The accuracy and confusion matrix are simlar as those of the training set.
+
+```{r rpart-validation}
+predrpart.validation <- predict(modelrpart,newdata=validation)
+sum(predrpart.validation==validation$classe) / length(predrpart.validation)
+table(predrpart.validation, validation$classe)
+```
 
 ## Model 2: Random Forest
 
@@ -79,6 +94,15 @@ table(predrf, training$classe)
 
 The accuracy is 1, meaning the model can predict all cases in the training set correctly.
 This is also shown by the confusion matrix.
+
+I then apply the model on the validation set.
+I also get perfect accuracy as on the training set.
+
+```{r rf-validation}
+predrf.validation <- predict(modelrf,newdata=validation)
+sum(predrf.validation==validation$classe) / length(predrf.validation)
+table(predrf.validation, validation$classe)
+```
 
 ```{r plot-rf}
 plot(modelrf, main="Random Forest Model")

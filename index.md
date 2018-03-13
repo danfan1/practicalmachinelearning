@@ -27,6 +27,8 @@ There is a lot of missing values (NA's) in the data set.
 We only data fields with no missing values in all rows.
 We remove fields, like timestamps, that have no connection to how well the exercise is performed.
 
+I then retain 30% of the training set as validation, and only use the remaining 70% for model training.
+
 
 ```r
 library(readr)
@@ -41,6 +43,11 @@ training <- subset(training, select=-c(X1, user_name, raw_timestamp_part_1, raw_
 testing <- subset(testing, select=-c(X1, user_name, raw_timestamp_part_1, raw_timestamp_part_2, cvtd_timestamp, new_window, num_window))
 
 training$classe <- as.factor(training$classe)
+
+library(caret)
+inTrain <- createDataPartition(training$classe, p = 0.7, list=FALSE)
+validation <- training[-inTrain,]
+training <- training[inTrain,]
 ```
 
 ## Model 1: Decision Tree
@@ -49,14 +56,13 @@ I first try to build a model with decision tree.
 
 
 ```r
-library(caret)
 modelrpart <- train(classe ~ ., method="rpart", data=training)
 predrpart <- predict(modelrpart,newdata=training)
 sum(predrpart==training$classe) / length(predrpart)
 ```
 
 ```
-## [1] 0.4955662
+## [1] 0.4957414
 ```
 
 ```r
@@ -66,16 +72,43 @@ table(predrpart, training$classe)
 ```
 ##          
 ## predrpart    A    B    C    D    E
-##         A 5080 1581 1587 1449  524
-##         B   81 1286  108  568  486
-##         C  405  930 1727 1199  966
+##         A 3542 1098 1091 1016  360
+##         B   64  907   74  404  352
+##         C  287  653 1231  832  683
 ##         D    0    0    0    0    0
-##         E   14    0    0    0 1631
+##         E   13    0    0    0 1130
 ```
 
-The accuracy is only 0.5.
+The accuracy on the training set is only 0.5.
 The confusion matrix also shows the model does separate the classes well.
 What is worst is that it does not predict any case to class D.
+
+I then apply the model on the validation set.
+The accuracy and confusion matrix are simlar as those of the training set.
+
+
+```r
+predrpart.validation <- predict(modelrpart,newdata=validation)
+sum(predrpart.validation==validation$classe) / length(predrpart.validation)
+```
+
+```
+## [1] 0.4958369
+```
+
+```r
+table(predrpart.validation, validation$classe)
+```
+
+```
+##                     
+## predrpart.validation    A    B    C    D    E
+##                    A 1532  475  495  426  162
+##                    B   26  389   35  174  141
+##                    C  115  275  496  364  278
+##                    D    0    0    0    0    0
+##                    E    1    0    0    0  501
+```
 
 ## Model 2: Random Forest
 
@@ -109,6 +142,33 @@ table(predrf, training$classe)
 
 The accuracy is 1, meaning the model can predict all cases in the training set correctly.
 This is also shown by the confusion matrix.
+
+I then apply the model on the validation set.
+I also get perfect accuracy as on the training set.
+
+
+```r
+predrf.validation <- predict(modelrf,newdata=validation)
+sum(predrf.validation==validation$classe) / length(predrf.validation)
+```
+
+```
+## [1] 1
+```
+
+```r
+table(predrf.validation, validation$classe)
+```
+
+```
+##                  
+## predrf.validation    A    B    C    D    E
+##                 A 1674    0    0    0    0
+##                 B    0 1139    0    0    0
+##                 C    0    0 1026    0    0
+##                 D    0    0    0  964    0
+##                 E    0    0    0    0 1082
+```
 
 
 ```r
