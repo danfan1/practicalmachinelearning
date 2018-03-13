@@ -1,15 +1,8 @@
----
-title: "Pracitcal Machine Learning Course Project"
-author: "Ying Wai Fan"
-date: "3/11/2018"
-output: 
-  html_document: 
-    keep_md: yes
----
+# Pracitcal Machine Learning Course Project
+Ying Wai Fan  
+3/11/2018  
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
-```
+
 
 ## Objective
 
@@ -34,7 +27,8 @@ There is a lot of missing values (NA's) in the data set.
 We only data fields with no missing values in all rows.
 We remove fields, like timestamps, that have no connection to how well the exercise is performed.
 
-```{r clean-data}
+
+```r
 library(readr)
 training <- read_csv("~/Desktop/pml-training.csv")
 testing <- read_csv("~/Desktop/pml-testing.csv")
@@ -53,12 +47,30 @@ training$classe <- as.factor(training$classe)
 
 I first try to build a model with decision tree.
 
-```{r rpart}
+
+```r
 library(caret)
 modelrpart <- train(classe ~ ., method="rpart", data=training)
 predrpart <- predict(modelrpart,newdata=training)
 sum(predrpart==training$classe) / length(predrpart)
+```
+
+```
+## [1] 0.4955662
+```
+
+```r
 table(predrpart, training$classe)
+```
+
+```
+##          
+## predrpart    A    B    C    D    E
+##         A 5080 1581 1587 1449  524
+##         B   81 1286  108  568  486
+##         C  405  930 1727 1199  966
+##         D    0    0    0    0    0
+##         E   14    0    0    0 1631
 ```
 
 The accuracy is only 0.5.
@@ -69,20 +81,41 @@ What is worst is that it does not predict any case to class D.
 
 Then I try to build a model with random forest.
 
-```{r rf}
+
+```r
 library(randomForest)
 modelrf <- randomForest(classe ~ ., data=training)
 predrf <- predict(modelrf,newdata=training)
 sum(predrf==training$classe) / length(predrf)
+```
+
+```
+## [1] 1
+```
+
+```r
 table(predrf, training$classe)
+```
+
+```
+##       
+## predrf    A    B    C    D    E
+##      A 5580    0    0    0    0
+##      B    0 3797    0    0    0
+##      C    0    0 3422    0    0
+##      D    0    0    0 3216    0
+##      E    0    0    0    0 3607
 ```
 
 The accuracy is 1, meaning the model can predict all cases in the training set correctly.
 This is also shown by the confusion matrix.
 
-```{r plot-rf}
+
+```r
 plot(modelrf, main="Random Forest Model")
 ```
+
+![](index_files/figure-html/plot-rf-1.png)<!-- -->
 
 The error plot above shows that error drops quickly with just about 30 trees.
 Random forest is quite efficient in reducing error in the prediction.
@@ -91,6 +124,13 @@ Random forest is quite efficient in reducing error in the prediction.
 
 Now we apply the random forest model to the test set.
 
-```{r test}
+
+```r
 predict(modelrf,newdata=testing)
+```
+
+```
+##  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+##  B  A  B  A  A  E  D  B  A  A  B  C  B  A  E  E  A  B  B  B 
+## Levels: A B C D E
 ```
